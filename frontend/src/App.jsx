@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import "./index.css";
 
-const API_BASE = "http://localhost:3001/api";
+const API_BASE = "https://pickuptracker.onrender.com/api/";
 
 function App() {
   const [selectedArea, setSelectedArea] = useState(null);
