@@ -9,6 +9,13 @@ A mobile-optimized web application for managing pickup game queues across multip
 - **Game modes**: Currently supports "Winner Stays On" mode
 - **Mobile-first design**: Optimized for mobile browsers with responsive Tailwind CSS styling
 
+## Stack
+
+- React.js and vite
+- Tailwind CSS
+- Express.js server with REST api
+- API service hosted on Render
+
 ## Setup
 
 1. Install backend dependencies:
