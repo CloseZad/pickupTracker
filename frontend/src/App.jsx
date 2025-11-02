@@ -337,7 +337,7 @@ function App() {
                       <select
                         value={selectedArea || ""}
                         onChange={(e) => setSelectedArea(e.target.value)}
-                        className="w-full px-5 py-3.5 bg-white/95 backdrop-blur-sm border-2 border-white/30 rounded-2xl focus:ring-4 focus:ring-emerald-500/50 focus:border-emerald-400 text-gray-800 font-medium shadow-lg transition-all duration-200 hover:bg-white hover:shadow-xl"
+                        className="w-full px-5 py-3.5 bg-white border-2 border-white/30 rounded-2xl focus:ring-4 focus:ring-emerald-500/50 focus:border-emerald-400 text-gray-800 font-medium shadow-lg transition-all duration-200 hover:bg-white hover:shadow-xl"
                       >
                         <option value="">-- Select Area --</option>
                         {areas.map((area) => (
