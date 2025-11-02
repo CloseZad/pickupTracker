@@ -3,6 +3,7 @@ import cors from "cors";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import cron from "node-cron";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -251,6 +252,19 @@ app.get("/api/areas", (req, res) => {
     "Volleyball CIF Gym 3",
   ];
   res.json(areas);
+});
+
+// === Scheduled Reset: clear data.json every midnight ===
+cron.schedule("0 0 * * *", () => {
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify({}));
+    console.log(
+      "✅ Data reset successfully at midnight:",
+      new Date().toLocaleString()
+    );
+  } catch (err) {
+    console.error("❌ Failed to reset data.json:", err);
+  }
 });
 
 app.listen(PORT, () => {
