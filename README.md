@@ -1,6 +1,6 @@
 # Pickup Tracker
 
-![alt text]([https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png](https://github.com/CloseZad/pickupTracker/blob/main/PickupTracker.jpeg) "Demo")
+![alt text](([https://github.com/CloseZad/pickupTracker/blob/main/PickupTracker.jpeg](https://github.com/CloseZad/pickupTracker/blob/main/PickupTracker.jpeg?raw=true)) "Demo")
 
 
 A mobile-optimized web application for managing pickup game queues across multiple fields/areas.
