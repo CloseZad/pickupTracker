@@ -12,14 +12,25 @@ function App() {
   const [newTeamName, setNewTeamName] = useState("");
   const [sessionCreated, setSessionCreated] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [backendDown, setBackendDown] = useState(false);
   const [score, setScore] = useState({ team1: 0, team2: 0 });
   const [showScoreView, setShowScoreView] = useState(false);
 
   // Fetch available areas
   useEffect(() => {
     fetch(`${API_BASE}/areas`)
-      .then((res) => res.json())
-      .then((data) => setAreas(data));
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        setAreas(data);
+        setBackendDown(false); //Backend is up
+      })
+      .catch((error) => {
+        console.error("Error fetching areas:", error);
+        setBackendDown(true); // Backend likely down
+      });
   }, []);
 
   // One-time fetch when area changes (to check if session exists)
@@ -219,6 +230,12 @@ function App() {
 
   return (
     <>
+      {backendDown && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-xl shadow-2xl z-50 text-center animate-fadeIn">
+          ⚠️ Unable to connect to server — contact @CloseZad on IG to start
+          server
+        </div>
+      )}
       {/* Full Screen Score View */}
       {showScoreView && inPlay.length === 2 && mode === "classic" && (
         <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-800 z-50 flex items-center justify-center p-4">
