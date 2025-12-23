@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import "./index.css";
 
 const API_BASE = "https://pickuptracker.onrender.com/api";
+// const API_BASE = "http://localhost:3001/api";
 
 function App() {
   const [selectedArea, setSelectedArea] = useState(null);
@@ -15,6 +16,9 @@ function App() {
   const [backendDown, setBackendDown] = useState(false);
   const [score, setScore] = useState({ team1: 0, team2: 0 });
   const [showScoreView, setShowScoreView] = useState(false);
+
+  const [customAreaName, setCustomAreaName] = useState("");
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
 
   // Fetch available areas
   useEffect(() => {
@@ -89,11 +93,15 @@ function App() {
   };
 
   const createSession = async () => {
-    if (!selectedArea || !mode) return;
+    // Determine which name to use
+    const areaToUse = isCreatingNew ? customAreaName.trim() : selectedArea;
+
+    if (!areaToUse || !mode) return;
+
     setLoading(true);
     try {
       const res = await fetch(
-        `${API_BASE}/queue/${encodeURIComponent(selectedArea)}`,
+        `${API_BASE}/queue/${encodeURIComponent(areaToUse)}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -101,8 +109,8 @@ function App() {
         }
       );
       if (res.ok) {
+        setSelectedArea(areaToUse); // Now we set it, which triggers the polling useEffect
         setSessionCreated(true);
-        await fetchQueue();
       }
     } catch (error) {
       console.error("Error creating session:", error);
@@ -236,6 +244,7 @@ function App() {
           server
         </div>
       )}
+
       {/* Full Screen Score View */}
       {showScoreView && inPlay.length === 2 && mode === "classic" && (
         <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-800 z-50 flex items-center justify-center p-4">
@@ -339,33 +348,62 @@ function App() {
 
           {/* Scrollable Content */}
           <div className="overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 bg-gradient-to-b from-white/5 to-white/10 flex-1">
-            {/* Area Selection */}
+            {/* Area Selection / Session Creation */}
             {!sessionCreated && (
               <div className="space-y-6 animate-fadeIn">
                 <div>
                   <h2 className="text-2xl font-bold mb-6 text-white text-center tracking-tight">
-                    Create Session
+                    {isCreatingNew ? "Start New Session" : "Join Session"}
                   </h2>
                   <div className="space-y-5">
                     <div>
-                      <label className="block text-sm font-semibold text-white/90 mb-3 tracking-wide">
-                        Select Area
-                      </label>
-                      <select
-                        value={selectedArea || ""}
-                        onChange={(e) => setSelectedArea(e.target.value)}
-                        className="w-full px-5 py-3.5 bg-white border-2 border-white/30 rounded-2xl focus:ring-4 focus:ring-emerald-500/50 focus:border-emerald-400 text-gray-800 font-medium shadow-lg transition-all duration-200 hover:bg-white hover:shadow-xl"
-                      >
-                        <option value="">-- Select Area --</option>
-                        {areas.map((area) => (
-                          <option key={area} value={area}>
-                            {area}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex justify-between items-center mb-3">
+                        <label className="text-sm font-semibold text-white/90 tracking-wide">
+                          {isCreatingNew ? "Location Name" : "Select Location"}
+                        </label>
+                        <button
+                          onClick={() => {
+                            setIsCreatingNew(!isCreatingNew);
+                            setSelectedArea(null);
+                            setCustomAreaName("");
+                          }}
+                          className="text-xs font-bold text-emerald-300 hover:text-emerald-100 transition-colors bg-white/10 px-3 py-1 rounded-full border border-white/20"
+                        >
+                          {isCreatingNew
+                            ? "Existing Sessions"
+                            : "+ New Location"}
+                        </button>
+                      </div>
+
+                      {isCreatingNew ? (
+                        <input
+                          type="text"
+                          placeholder="e.g. South Court"
+                          value={customAreaName}
+                          onChange={(e) => {
+                            setCustomAreaName(e.target.value);
+                            // REMOVED: setSelectedArea(e.target.value);
+                          }}
+                          className="w-full px-5 py-3.5 bg-white border-2 border-white/30 rounded-2xl ..."
+                        />
+                      ) : (
+                        <select
+                          value={selectedArea || ""}
+                          onChange={(e) => setSelectedArea(e.target.value)}
+                          className="w-full px-5 py-3.5 bg-white border-2 border-white/30 rounded-2xl focus:ring-4 focus:ring-emerald-500/50 focus:border-emerald-400 text-gray-800 font-medium shadow-lg transition-all hover:bg-white"
+                        >
+                          <option value="">-- Select Active Area --</option>
+                          {areas.map((area) => (
+                            <option key={area} value={area}>
+                              {area}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
 
-                    {selectedArea && (
+                    {(selectedArea ||
+                      (isCreatingNew && customAreaName.trim())) && (
                       <div className="animate-slideDown">
                         <label className="block text-sm font-semibold text-white/90 mb-3 tracking-wide">
                           Game Mode
@@ -373,37 +411,35 @@ function App() {
                         <select
                           value={mode}
                           onChange={(e) => setMode(e.target.value)}
-                          className="w-full px-5 py-3.5 bg-white/95 backdrop-blur-sm border-2 border-white/30 rounded-2xl focus:ring-4 focus:ring-emerald-500/50 focus:border-emerald-400 text-gray-800 font-medium shadow-lg transition-all duration-200 hover:bg-white hover:shadow-xl"
+                          className="w-full px-5 py-3.5 bg-white/95 backdrop-blur-sm border-2 border-white/30 rounded-2xl focus:ring-4 focus:ring-emerald-500/50 focus:border-emerald-400 text-gray-800 font-medium shadow-lg transition-all"
                         >
                           <option value="">-- Select Mode --</option>
-                          {selectedArea.toLowerCase().includes("volleyball") ? (
-                            <>
-                              <option value="winner-stays-on">
-                                Winner Stays On
-                              </option>
-                              <option value="classic">Classic</option>
-                            </>
-                          ) : (
-                            <option value="winner-stays-on">
-                              Winner Stays On
-                            </option>
-                          )}
+                          <option value="winner-stays-on">
+                            Winner Stays On
+                          </option>
+                          <option value="classic">Classic</option>
                         </select>
                       </div>
                     )}
 
-                    {selectedArea && mode && (
-                      <button
-                        onClick={createSession}
-                        disabled={loading}
-                        className="w-full bg-gradient-to-r from-slate-600 via-emerald-600 to-teal-600 text-white py-4 rounded-2xl font-bold shadow-2xl hover:shadow-emerald-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-[1.02] hover:from-slate-500 hover:via-emerald-500 hover:to-teal-500 relative overflow-hidden group"
-                      >
-                        <span className="relative z-10">
-                          {loading ? "Creating..." : "Create Session"}
-                        </span>
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                      </button>
-                    )}
+                    {(selectedArea ||
+                      (isCreatingNew && customAreaName.trim())) &&
+                      mode && (
+                        <button
+                          onClick={createSession}
+                          disabled={loading}
+                          className="w-full bg-gradient-to-r from-slate-600 via-emerald-600 to-teal-600 text-white py-4 rounded-2xl font-bold shadow-2xl hover:shadow-emerald-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-[1.02] relative overflow-hidden group"
+                        >
+                          <span className="relative z-10">
+                            {loading
+                              ? "Initializing..."
+                              : isCreatingNew
+                              ? "Create Session"
+                              : "Join Session"}
+                          </span>
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                        </button>
+                      )}
                   </div>
                 </div>
               </div>
@@ -430,7 +466,7 @@ function App() {
                         {inPlay.map((team, idx) => (
                           <div
                             key={team.id}
-                            className="bg-white/25 backdrop-blur-md rounded-2xl p-5 text-center border-2 border-white/40 shadow-xl transform transition-all duration-300 hover:scale-105 hover:bg-white/30"
+                            className="bg-white/25 backdrop-blur-md rounded-2xl p-5 text-center border-2 border-white/40 shadow-xl transform transition-all duration-300 hover:scale-105"
                           >
                             <div className="text-2xl font-light break-words mb-2 drop-shadow-lg whitespace-normal leading-tight">
                               {team.name}
@@ -443,7 +479,7 @@ function App() {
                       </div>
                     )}
 
-                    {/* Game Result Buttons */}
+                    {/* Controls for Winner Stays On */}
                     {inPlay.length === 2 && mode === "winner-stays-on" && (
                       <div className="space-y-3">
                         <div className="grid grid-cols-2 gap-3">
@@ -452,7 +488,7 @@ function App() {
                               recordResult(inPlay[0].id, inPlay[1].id)
                             }
                             disabled={loading}
-                            className="bg-white/25 hover:bg-white/35 backdrop-blur-md py-3 px-4 rounded-2xl font-light disabled:opacity-50 text-sm border-2 border-white/40 shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 break-words whitespace-normal leading-tight"
+                            className="bg-white/25 hover:bg-white/35 backdrop-blur-md py-3 px-4 rounded-2xl font-light disabled:opacity-50 text-sm border-2 border-white/40 shadow-lg transition-all transform hover:scale-105 active:scale-95 break-words"
                           >
                             {inPlay[0].name} Wins
                           </button>
@@ -461,7 +497,7 @@ function App() {
                               recordResult(inPlay[1].id, inPlay[0].id)
                             }
                             disabled={loading}
-                            className="bg-white/25 hover:bg-white/35 backdrop-blur-md py-3 px-4 rounded-2xl font-light disabled:opacity-50 text-sm border-2 border-white/40 shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 break-words whitespace-normal leading-tight"
+                            className="bg-white/25 hover:bg-white/35 backdrop-blur-md py-3 px-4 rounded-2xl font-light disabled:opacity-50 text-sm border-2 border-white/40 shadow-lg transition-all transform hover:scale-105 active:scale-95 break-words"
                           >
                             {inPlay[1].name} Wins
                           </button>
@@ -469,26 +505,26 @@ function App() {
                         <button
                           onClick={() => recordResult(null, null, true)}
                           disabled={loading}
-                          className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-md py-3 px-4 rounded-2xl font-semibold disabled:opacity-50 text-sm border-2 border-white/30 shadow-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95"
+                          className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-md py-3 px-4 rounded-2xl font-semibold border-2 border-white/30 shadow-lg"
                         >
                           Both Teams Go to Queue
                         </button>
                       </div>
                     )}
 
-                    {/* Classic Mode Buttons */}
+                    {/* Controls for Classic Mode */}
                     {inPlay.length === 2 && mode === "classic" && (
                       <div className="space-y-3">
                         <button
                           onClick={() => setShowScoreView(true)}
-                          className="w-full bg-white/25 hover:bg-white/35 backdrop-blur-md py-3 px-4 rounded-2xl font-bold text-sm border-2 border-white/40 shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95"
+                          className="w-full bg-white/25 hover:bg-white/35 backdrop-blur-md py-3 px-4 rounded-2xl font-bold text-sm border-2 border-white/40 shadow-lg transition-all transform hover:scale-105 active:scale-95"
                         >
                           View Score
                         </button>
                         <button
                           onClick={() => recordResult(null, null, true)}
                           disabled={loading}
-                          className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-md py-3 px-4 rounded-2xl font-semibold disabled:opacity-50 text-sm border-2 border-white/30 shadow-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95"
+                          className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-md py-3 px-4 rounded-2xl font-semibold border-2 border-white/30 shadow-lg"
                         >
                           End Game
                         </button>
@@ -499,7 +535,7 @@ function App() {
                       <button
                         onClick={startGame}
                         disabled={loading}
-                        className="w-full mt-5 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 py-4 px-6 rounded-2xl font-bold disabled:opacity-50 shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 text-white border-2 border-white/30"
+                        className="w-full mt-5 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 py-4 px-6 rounded-2xl font-bold disabled:opacity-50 shadow-2xl text-white border-2 border-white/30 transition-all transform hover:scale-105"
                       >
                         Start Game
                       </button>
@@ -507,13 +543,11 @@ function App() {
                   </div>
                 </div>
 
-                {/* Queue Table */}
+                {/* Queue Section */}
                 <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-white/20">
                   <h2 className="text-xl font-bold mb-5 text-white tracking-tight">
                     Queue
                   </h2>
-
-                  {/* Add Team Form */}
                   <div className="mb-5 flex gap-3">
                     <input
                       type="text"
@@ -521,18 +555,17 @@ function App() {
                       onChange={(e) => setNewTeamName(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && addTeam()}
                       placeholder="Enter team name"
-                      className="flex-1 px-5 py-3.5 bg-white/95 backdrop-blur-sm border-2 border-white/30 rounded-2xl focus:ring-4 focus:ring-emerald-500/50 focus:border-emerald-400 text-gray-800 font-medium shadow-lg transition-all duration-200 hover:bg-white hover:shadow-xl"
+                      className="flex-1 px-5 py-3.5 bg-white/95 border-2 border-white/30 rounded-2xl focus:ring-4 focus:ring-emerald-500/50 text-gray-800 font-medium shadow-lg"
                     />
                     <button
                       onClick={addTeam}
                       disabled={loading || !newTeamName.trim()}
-                      className="bg-gradient-to-r from-slate-600 via-emerald-600 to-teal-600 text-white px-6 py-3.5 rounded-2xl font-bold hover:from-slate-500 hover:via-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95"
+                      className="bg-gradient-to-r from-slate-600 via-emerald-600 to-teal-600 text-white px-6 py-3.5 rounded-2xl font-bold shadow-xl transition-all transform hover:scale-105 active:scale-95"
                     >
                       Add
                     </button>
                   </div>
 
-                  {/* Teams Table */}
                   {teams.length === 0 ? (
                     <div className="text-center py-12">
                       <p className="text-white/60 text-lg">No teams in queue</p>
@@ -543,13 +576,13 @@ function App() {
                         <table className="w-full">
                           <thead>
                             <tr className="border-b border-white/20 bg-white/5">
-                              <th className="text-left py-4 px-4 font-bold text-white/90 text-xs uppercase tracking-wider">
+                              <th className="text-left py-4 px-4 font-bold text-white/90 text-xs uppercase">
                                 #
                               </th>
-                              <th className="text-left py-4 px-4 font-bold text-white/90 text-xs uppercase tracking-wider">
+                              <th className="text-left py-4 px-4 font-bold text-white/90 text-xs uppercase">
                                 Team Name
                               </th>
-                              <th className="text-right py-4 px-4 font-bold text-white/90 text-xs uppercase tracking-wider">
+                              <th className="text-right py-4 px-4 font-bold text-white/90 text-xs uppercase">
                                 Actions
                               </th>
                             </tr>
@@ -558,19 +591,19 @@ function App() {
                             {teams.map((team, index) => (
                               <tr
                                 key={team.id}
-                                className="border-b border-white/10 hover:bg-white/10 transition-all duration-150"
+                                className="border-b border-white/10 hover:bg-white/10 transition-all"
                               >
                                 <td className="py-4 px-4 text-white/80 font-bold text-lg">
                                   {index + 1}
                                 </td>
-                                <td className="py-4 px-4 text-white font-light text-base break-words whitespace-normal">
+                                <td className="py-4 px-4 text-white font-light text-base">
                                   {team.name}
                                 </td>
                                 <td className="py-4 px-4 text-right">
                                   <button
                                     onClick={() => removeTeam(team.id)}
                                     disabled={loading}
-                                    className="text-red-400 hover:text-red-300 font-bold disabled:opacity-50 text-sm transition-all duration-200 hover:scale-110 active:scale-95"
+                                    className="text-red-400 hover:text-red-300 font-bold text-sm transition-all hover:scale-110"
                                   >
                                     Remove
                                   </button>
@@ -584,7 +617,7 @@ function App() {
                   )}
                 </div>
 
-                {/* Session Info */}
+                {/* Session Footer Info */}
                 <div className="text-center text-sm text-white/70 space-y-2 pb-2">
                   <div className="flex items-center justify-center gap-3">
                     <span className="font-semibold text-white/50">Area:</span>
@@ -600,6 +633,15 @@ function App() {
                         : mode}
                     </span>
                   </div>
+                  <button
+                    onClick={() => {
+                      setSessionCreated(false);
+                      setSelectedArea(null);
+                    }}
+                    className="text-xs text-emerald-400 underline mt-2 opacity-60 hover:opacity-100"
+                  >
+                    Change Session
+                  </button>
                 </div>
               </div>
             )}

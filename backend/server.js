@@ -241,17 +241,35 @@ app.post("/api/queue/:area/score", (req, res) => {
   res.json(data[area]);
 });
 
-// Get all available areas
+// Change the areas GET route to return keys from your JSON file
 app.get("/api/areas", (req, res) => {
-  const areas = [
-    "CIF Field A",
-    "CIF Field B",
-    "CIF Field C",
-    "Volleyball CIF Gym 1",
-    "Volleyball CIF Gym 2",
-    "Volleyball CIF Gym 3",
-  ];
-  res.json(areas);
+  const data = readData();
+  // Get all existing session names from the data object
+  const existingAreas = Object.keys(data);
+  res.json(existingAreas);
+});
+
+// Update or Add a New Session
+app.post("/api/queue/:area", (req, res) => {
+  const { area } = req.params; // This will now be the custom name from user input
+  const { mode } = req.body;
+
+  const data = readData();
+
+  // If the area doesn't exist, we create it dynamically
+  if (!data[area]) {
+    data[area] = {
+      mode,
+      teams: [],
+      inPlay: [],
+      score: { team1: 0, team2: 0 },
+    };
+  } else {
+    data[area].mode = mode;
+  }
+
+  writeData(data);
+  res.json(data[area]);
 });
 
 // === Scheduled Reset: clear data.json every midnight ===
