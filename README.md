@@ -7,10 +7,11 @@ A mobile-optimized web application for managing pickup game queues across multip
 
 ## Features
 
-- **Area-based queues**: Separate queue systems for different fields (e.g., "CIF Field A", "CIF Field B", etc.)
-- **Real-time updates**: Multiple devices can view and update the same queue (polling every 2 seconds)
-- **Game modes**: Currently supports "Winner Stays On" mode
+- **Multiple session handling**: Seperate queue systems co-existing across sessions that can be joined from list, or created newly
+- **Real-time updates**: Multiple devices can view and update the same queue/score (polling every 2 seconds)
+- **Game modes**: Currently supports "Winner Stays On" mode and "Classic" mode
 - **Mobile-first design**: Optimized for mobile browsers with responsive Tailwind CSS styling
+- **Draggable re-ordering**: Allows teams to be dragged through queue to reorder
 
 ## Stack
 
