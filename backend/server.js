@@ -105,6 +105,32 @@ app.post("/api/queue/:area/teams", (req, res) => {
   res.json(data[area]);
 });
 
+// Reorder the queue (EDIT)
+app.post("/api/queue/:area/reorder", (req, res) => {
+  const { area } = req.params;
+  const { teams } = req.body;
+
+  // 1. Load current data
+  const data = readData();
+
+  // 2. Validate session exists
+  if (!data[area]) {
+    return res.status(404).json({ error: "Session not found" });
+  }
+
+  // 3. Validate input
+  if (!Array.isArray(teams)) {
+    return res.status(400).json({ error: "Invalid data format" });
+  }
+
+  // 4. Save the new order
+  data[area].teams = teams;
+  writeData(data);
+
+  // 5. Respond
+  res.json({ success: true, teams: data[area].teams });
+});
+
 // Remove team from queue
 app.delete("/api/queue/:area/teams/:teamId", (req, res) => {
   const { area } = req.params;
@@ -249,28 +275,28 @@ app.get("/api/areas", (req, res) => {
   res.json(existingAreas);
 });
 
-// Update or Add a New Session
-app.post("/api/queue/:area", (req, res) => {
-  const { area } = req.params; // This will now be the custom name from user input
-  const { mode } = req.body;
+// // Update or Add a New Session
+// app.post("/api/queue/:area", (req, res) => {
+//   const { area } = req.params; // This will now be the custom name from user input
+//   const { mode } = req.body;
 
-  const data = readData();
+//   const data = readData();
 
-  // If the area doesn't exist, we create it dynamically
-  if (!data[area]) {
-    data[area] = {
-      mode,
-      teams: [],
-      inPlay: [],
-      score: { team1: 0, team2: 0 },
-    };
-  } else {
-    data[area].mode = mode;
-  }
+//   // If the area doesn't exist, we create it dynamically
+//   if (!data[area]) {
+//     data[area] = {
+//       mode,
+//       teams: [],
+//       inPlay: [],
+//       score: { team1: 0, team2: 0 },
+//     };
+//   } else {
+//     data[area].mode = mode;
+//   }
 
-  writeData(data);
-  res.json(data[area]);
-});
+//   writeData(data);
+//   res.json(data[area]);
+// });
 
 // === Scheduled Reset: clear data.json every midnight ===
 cron.schedule("0 0 * * *", () => {

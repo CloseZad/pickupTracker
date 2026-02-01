@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import "./index.css";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 const API_BASE = "https://pickuptracker.onrender.com/api";
 // const API_BASE = "http://localhost:3001/api";
@@ -109,7 +110,11 @@ function App() {
         }
       );
       if (res.ok) {
-        setSelectedArea(areaToUse); // Now we set it, which triggers the polling useEffect
+        if (isCreatingNew) {
+          setAreas((prev) => [...prev, areaToUse]);
+        }
+
+        setSelectedArea(areaToUse);
         setSessionCreated(true);
       }
     } catch (error) {
@@ -233,6 +238,39 @@ function App() {
       alert("Failed to record result");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOnDragEnd = async (result) => {
+    if (!result.destination) return; // Dropped outside the list
+
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    if (sourceIndex === destinationIndex) return;
+
+    // 1. Reorder local state immediately (Optimistic UI)
+    const newTeams = Array.from(teams);
+    const [reorderedItem] = newTeams.splice(sourceIndex, 1);
+    newTeams.splice(destinationIndex, 0, reorderedItem);
+
+    setTeams(newTeams);
+
+    // 2. Sync with Backend
+    // You will need to create this endpoint on your backend!
+    try {
+      await fetch(
+        `${API_BASE}/queue/${encodeURIComponent(selectedArea)}/reorder`,
+        {
+          method: "POST", // or PUT
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ teams: newTeams }),
+        }
+      );
+    } catch (error) {
+      console.error("Failed to save queue order", error);
+      // Optional: revert state on error
+      fetchQueue();
     }
   };
 
@@ -573,45 +611,107 @@ function App() {
                   ) : (
                     <div className="overflow-x-auto -mx-6 px-6">
                       <div className="bg-white/5 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/10">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b border-white/20 bg-white/5">
-                              <th className="text-left py-4 px-4 font-bold text-white/90 text-xs uppercase">
+                        {teams.length === 0 ? (
+                          <div className="text-center py-12">
+                            <p className="text-white/60 text-lg">
+                              No teams in queue
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="bg-white/5 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/10">
+                            {/* Header Row */}
+                            <div className="grid grid-cols-[3rem_1fr_auto] gap-4 border-b border-white/20 bg-white/5 p-4">
+                              <div className="font-bold text-white/90 text-xs uppercase">
                                 #
-                              </th>
-                              <th className="text-left py-4 px-4 font-bold text-white/90 text-xs uppercase">
+                              </div>
+                              <div className="font-bold text-white/90 text-xs uppercase">
                                 Team Name
-                              </th>
-                              <th className="text-right py-4 px-4 font-bold text-white/90 text-xs uppercase">
+                              </div>
+                              <div className="font-bold text-white/90 text-xs uppercase text-right">
                                 Actions
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {teams.map((team, index) => (
-                              <tr
-                                key={team.id}
-                                className="border-b border-white/10 hover:bg-white/10 transition-all"
-                              >
-                                <td className="py-4 px-4 text-white/80 font-bold text-lg">
-                                  {index + 1}
-                                </td>
-                                <td className="py-4 px-4 text-white font-light text-base">
-                                  {team.name}
-                                </td>
-                                <td className="py-4 px-4 text-right">
-                                  <button
-                                    onClick={() => removeTeam(team.id)}
-                                    disabled={loading}
-                                    className="text-red-400 hover:text-red-300 font-bold text-sm transition-all hover:scale-110"
+                              </div>
+                            </div>
+
+                            {/* Draggable List */}
+                            <DragDropContext onDragEnd={handleOnDragEnd}>
+                              <Droppable droppableId="queue-list">
+                                {(provided) => (
+                                  <div
+                                    {...provided.droppableProps}
+                                    ref={provided.innerRef}
+                                    className="divide-y divide-white/10"
                                   >
-                                    Remove
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                                    {teams.map((team, index) => (
+                                      <Draggable
+                                        key={team.id}
+                                        draggableId={String(team.id)}
+                                        index={index}
+                                      >
+                                        {(provided, snapshot) => (
+                                          <div
+                                            ref={provided.innerRef}
+                                            {...provided.draggableProps}
+                                            {...provided.dragHandleProps}
+                                            className={`grid grid-cols-[3rem_1fr_auto] gap-4 p-4 items-center transition-colors ${
+                                              snapshot.isDragging
+                                                ? "bg-emerald-600/50 shadow-xl ring-2 ring-emerald-400 z-50 rounded-lg"
+                                                : "hover:bg-white/10"
+                                            }`}
+                                            style={{
+                                              ...provided.draggableProps.style, // Required for positioning
+                                            }}
+                                          >
+                                            {/* Index Column with Grip Icon */}
+                                            <div className="flex items-center gap-2 text-white/80 font-bold text-lg cursor-grab active:cursor-grabbing">
+                                              {/* Grip Icon */}
+                                              <svg
+                                                className="w-4 h-4 opacity-50"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                              >
+                                                <path
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                  strokeWidth={2}
+                                                  d="M4 8h16M4 16h16"
+                                                />
+                                              </svg>
+                                              {index + 1}
+                                            </div>
+
+                                            {/* Name Column */}
+                                            <div className="text-white font-light text-base">
+                                              {team.name}
+                                            </div>
+
+                                            {/* Actions Column */}
+                                            <div className="text-right">
+                                              <button
+                                                onClick={() =>
+                                                  removeTeam(team.id)
+                                                }
+                                                disabled={loading}
+                                                className="text-red-400 hover:text-red-300 font-bold text-sm transition-all hover:scale-110"
+                                                // Prevent drag when clicking button
+                                                onMouseDown={(e) =>
+                                                  e.stopPropagation()
+                                                }
+                                              >
+                                                Remove
+                                              </button>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </Draggable>
+                                    ))}
+                                    {provided.placeholder}
+                                  </div>
+                                )}
+                              </Droppable>
+                            </DragDropContext>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
