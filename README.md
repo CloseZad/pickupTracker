@@ -55,13 +55,14 @@ This starts the Vite dev server (usually on `http://localhost:5173`)
 
 ## Usage
 
-1. **Create a Session**: Select an area (e.g., "CIF Field A") and choose "Winner Stays On" mode
-2. **Add Teams**: Enter team names and add them to the queue
-3. **Start Game**: Click "Start Game" to move the first two teams to "In Play"
-4. **Record Results**: 
+1. **Create a Session**: Enter a name, a mode, and create session
+  OR **Join a Session**: Select an area (e.g., "CIF Field A") and choose "Winner Stays On" mode or "Classic" mode 
+3. **Add Teams**: Enter team names and add them to the queue
+4. **Start Game**: Click "Start Game" to move the first two teams to "In Play"
+5. **Record Results**: 
    - Click which team won (winner stays, loser goes to back of queue)
    - Or click "Both Teams Go to Queue" to send both teams back
-5. **View from Multiple Devices**: Any device can access the same queue by selecting the same area
+6. **View from Multiple Devices**: Any device can access the same queue by selecting the same area
 
 ## API Endpoints
 
